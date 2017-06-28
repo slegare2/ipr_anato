@@ -24,9 +24,12 @@ import urllib.request # Cannot use requests for FTP
 import lxml.html
 from lxml import etree
 
-# Function to show download progression. 
-# Found on stackoverflow from J.F. Sebastian.
+
 def reporthook(blocknum, blocksize, totalsize):
+    """
+    Function to show download progression. 
+    Found on stackoverflow from J.F. Sebastian.
+    """
     readsofar = blocknum * blocksize
     if totalsize > 0:
         percent = readsofar * 1e2 / totalsize
@@ -38,21 +41,41 @@ def reporthook(blocknum, blocksize, totalsize):
     else: # total size is unknown
         sys.stderr.write("read %d\n" % (readsofar,))
 
+def check_version(prefix, suffix):
+    """ 
+    Check the version of file with given prefix and suffix.
+    An example of prefix is 'match_complete' and suffix
+    would be 'xml.gz'.
+    """
+    match_versions = []
+    for dlded_file in os.listdir('downloaded-files'):
+        if prefix in dlded_file and suffix in dlded_file:
+            # Find version as first series of int characters.
+            start = 0
+            for i in range(len(dlded_file)):
+                try:
+                    x = int(dlded_file[i])
+                    start = i-1
+                except:
+                    pass
 
-# Check what is the previous version of InterPro that was downloaded.
-match_versions = []
-for dlded_file in os.listdir('downloaded-files'):
-    if 'match_complete' in dlded_file:
-        dash = dlded_file.index('-')
-        dot = dlded_file.index('.')
-        version = int(dlded_file[dash+1:dot])
-        match_versions.append(version)
-if len(match_versions) > 0:
-    sorted_versions = sorted(match_versions)
-    prev_version = sorted_versions[-1]
-else:
-    prev_version = 0
-    
+                if start > 0:
+                    try:
+                        x = int(dlded_file[i])
+                    except:
+                        end = i
+                        break
+
+            version = int(dlded_file[start:end])
+            match_versions.append(version)
+    if len(match_versions) > 0:
+        sorted_versions = sorted(match_versions)
+        version = sorted_versions[-1]
+    else:
+        version = 0
+
+    return version
+
 
 # Check last version of InterPro online.
 ipr_home = urllib.request.urlopen('https://www.ebi.ac.uk/interpro/')
@@ -64,32 +87,32 @@ ipr_version = latest_rel.text
 tokens = ipr_version.split()
 last_version = int(float(tokens[1]))
 
+today = time.strftime("%d%b%Y")
 
-# Check if the InterPro data must be updated.
+
+# Download match_complete.xml.gz if needed.
+prev_version = check_version('match_complete-', 'xml.gz')
 if last_version > prev_version:
-    download_needed = True
-    today = time.strftime("%d%b%Y")
-else:
-    download_needed = False
-
-
-# Download files if necessary.
-if download_needed:
-    # Download match_complete.xml.gz
     print('Downloading file match_complete-%i.xml.gz' % last_version)
     urllib.request.urlretrieve('ftp://ftp.ebi.ac.uk/pub/databases/interpro/'
                                'match_complete.xml.gz', 
                                'downloaded-files/match_complete-%i.xml.gz'
                                % last_version, reporthook
-    )    
-    # Download interpro.xml.gz
+    ) 
+
+# Download interpro.xml.gz if needed.
+prev_version = check_version('interpro-', 'xml.gz')
+if last_version > prev_version:
     print('Downloading file interpro-%i.xml.gz' % last_version)
     urllib.request.urlretrieve('ftp://ftp.ebi.ac.uk/pub/databases/interpro/'
                                'interpro.xml.gz', 
                                'downloaded-files/interpro-%i.xml.gz' 
                                % last_version, reporthook
     )
-     Download uniprot-hproteome.tsv.gz
+
+# Download uniprot-hproteome.tsv.gz if needed.
+prev_version = check_version('uniprot-hproteome-', 'tsv.gz')
+if last_version > prev_version:
     print('Downloading file uniprot-hproteome-%i-%s.tsv.gz' % (last_version, today))
     print('This should take about a minute.')
     queryline = ('http://www.uniprot.org/uniprot/'
@@ -103,7 +126,10 @@ if download_needed:
                                'uniprot-hproteome-%i-%s.tsv.gz' 
                                % (last_version, today)
     )
-    # Download uniprot-hproteome.fasta.gz
+
+# Download uniprot-hproteome.fasta.gz if needed.
+prev_version = check_version('uniprot-hproteome-', 'fasta.gz')
+if last_version > prev_version:
     print('Downloading file uniprot-hproteome-%i-%s.fasta.gz' % (last_version, today))
     print('This should take about a minute.')
     queryline = ('http://www.uniprot.org/uniprot/'

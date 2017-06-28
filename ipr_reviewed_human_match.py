@@ -7,18 +7,40 @@
 # know the number of lines in advance. It presumably contains ~85 millon 
 # entries (the number of protein sequences in TrEMBL).
 
+import os
 import gzip
 import time
+import shutil
 
 
-# Output files.
-swiss_match_out = open('ipr_reviewed_human_match-63.xml','w')
-proteome_list = open('uniprot-hproteome-list-02jun2017.txt','w')
-matchrun_out = open('interpro_swiss_run.out','w')
+# Choose which version of InterPro to use (must have been downloaded first
+# using fetch_files.py)
+ipr_version = 63
+print('Updating protein domain data to InterPro %i.' % ipr_version)
+
+# Ensure that input files are as expected.
+dates = []
+for infile in os.listdir('downloaded-files'):
+    if 'uniprot-hproteome-%i' % ipr_version in infile and 'fasta.gz' in infile:
+        dash = infile.rindex('-')
+        dot = infile.index('.')
+        date = infile[dash+1:dot]
+        dates.append(date)
+dates_set = set(dates)
+if len(dates_set) == 1:
+    date_ext = dates_set[0]
+elif len(dates_set) > 1:
+    print('A unique date is expected for uniprot-hproteome-%i fasta file.' % ipr_version)
+
 
 # Input files.
-complete_match_in = gzip.open('files/match_complete-63.xml.gz','r')
-rev_human_proteome = gzip.open('files/uniprot-human-proteome-02jun2017.fasta.gz','r')
+rev_human_proteome = gzip.open('downloaded-files/uniprot-hproteome-%i-%s.fasta.gz' % (ipr_version, date_ext),'r')
+complete_match_in = gzip.open('downloaded-files/match_complete-%i.xml.gz' % ipr_version,'r')
+
+# Output files.
+matchrun_out = open('interpro_swiss_run.out','w')
+proteome_list = open('uniprot-entries-%i-%s.txt' % (ipr_version, date_ext),'w')
+swiss_match_out = open('ipr_reviewed_human_match-%i.xml' % ipr_version,'w')
 
 
 # Extract UniProt ACs from uniprot-human-proteome-02jun2017.fasta.gz.
@@ -110,3 +132,8 @@ for line in complete_match_in:
         matchrun_out.write('%s\n' %(progress) )
 
 swiss_match_out.write('</interpromatch>\n')
+
+# Make a copy of the generated file, since it took so long.
+shutil.copyfile('ipr_reviewed_human_match-%i.xml' % ipr_version, 
+                'ipr_reviewed_human_match-%i-copy.xml' % ipr_version)
+
