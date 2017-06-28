@@ -12,8 +12,8 @@ import time
 
 
 # Output files.
-swiss_match_out = open('ipr_swiss_match-63.xml','w')
-proteome_list = open('uniprot-human-proteome-list-02jun2017.txt','w')
+swiss_match_out = open('ipr_reviewed_human_match-63.xml','w')
+proteome_list = open('uniprot-hproteome-list-02jun2017.txt','w')
 matchrun_out = open('interpro_swiss_run.out','w')
 
 # Input files.

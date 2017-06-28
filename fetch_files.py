@@ -3,8 +3,17 @@
 # Files to fetch if InterPro file is found to have a new version:
 #   match_complete.xml.gz
 #   interpro.xml.gz
-#   uniprot-human-proteome.fasta.gz
-#   hgncsymbol-uniprot.list
+#   uniprot-hproteome.tsv.gz
+#   uniprot-hproteome.fasta.gz
+#
+# I get uniprot-hproteome.tsv.gz and uniprot-hproteome.fasta.gz
+# sorted from A to Z to ease subsequent extraction of reviewed 
+# human proteins with script ipr_reviewed_human_match.py
+#
+# The fasta file is actually only necessary to get the length 
+# of the isoforms, which I was not able to retrieve otherwise.
+# But in the end I also use the fasta file to get the ordered
+# list of UniProt entries with isoforms.
 
 import os
 import sys
@@ -59,48 +68,51 @@ last_version = int(float(tokens[1]))
 # Check if the InterPro data must be updated.
 if last_version > prev_version:
     download_needed = True
+    today = time.strftime("%d%b%Y")
 else:
     download_needed = False
 
 
 # Download files if necessary.
 if download_needed:
-    ## Download match_complete.xml.gz
-    #print('Downloading file match_complete-%i.xml.gz' % last_version)
-    #urllib.request.urlretrieve('ftp://ftp.ebi.ac.uk/pub/databases/interpro/'
-    #                           'match_complete.xml.gz', 
-    #                           'downloaded-files/match_complete-%i.xml.gz'
-    #                           % last_version, reporthook
-    #)    
-    ## Download interpro.xml.gz
-    #print('Downloading file interpro-%i.xml.gz' % last_version)
-    #urllib.request.urlretrieve('ftp://ftp.ebi.ac.uk/pub/databases/interpro/'
-    #                           'interpro.xml.gz', 
-    #                           'downloaded-files/interpro-%i.xml.gz' 
-    #                           % last_version, reporthook
-    #)
+    # Download match_complete.xml.gz
+    print('Downloading file match_complete-%i.xml.gz' % last_version)
+    urllib.request.urlretrieve('ftp://ftp.ebi.ac.uk/pub/databases/interpro/'
+                               'match_complete.xml.gz', 
+                               'downloaded-files/match_complete-%i.xml.gz'
+                               % last_version, reporthook
+    )    
+    # Download interpro.xml.gz
+    print('Downloading file interpro-%i.xml.gz' % last_version)
+    urllib.request.urlretrieve('ftp://ftp.ebi.ac.uk/pub/databases/interpro/'
+                               'interpro.xml.gz', 
+                               'downloaded-files/interpro-%i.xml.gz' 
+                               % last_version, reporthook
+    )
+     Download uniprot-hproteome.tsv.gz
+    print('Downloading file uniprot-hproteome-%i-%s.tsv.gz' % (last_version, today))
+    print('This should take about a minute.')
+    queryline = ('http://www.uniprot.org/uniprot/'
+                 '?query=reviewed:yes+AND+organism:9606+AND+proteome:up000005640'
+                 '&sort=id&desc=no&format=tab&compress=yes'
+                 '&columns=id,genes(PREFERRED),genes(ALTERNATIVE),database(HGNC),'
+                 'comment(ALTERNATIVE%20PRODUCTS)'
+    )
+    urllib.request.urlretrieve(queryline, 
+                               'downloaded-files/'
+                               'uniprot-hproteome-%i-%s.tsv.gz' 
+                               % (last_version, today)
+    )
     # Download uniprot-hproteome.fasta.gz
-    today = time.strftime("%d%b%Y")
     print('Downloading file uniprot-hproteome-%i-%s.fasta.gz' % (last_version, today))
-    print('Should take about a minute.')
-    query = 'reviewed:yes+AND+organism:9606+AND+proteome:up000005640'
-    queryline = ('http://www.uniprot.org/uniprot/?query=%s'
-                 '&format=fasta&include=yes&compress=yes' % query
+    print('This should take about a minute.')
+    queryline = ('http://www.uniprot.org/uniprot/'
+                 '?query=reviewed:yes+AND+organism:9606+AND+proteome:up000005640'
+                 '&sort=id&desc=no&format=fasta&include=yes&compress=yes'
     )
     urllib.request.urlretrieve(queryline, 
                                'downloaded-files/'
                                'uniprot-hproteome-%i-%s.fasta.gz' 
                                % (last_version, today)
     )
-
-
-# Double check that files match_complete.xml.gz and interpro.xml.gz
-# were both downloaded.
-dlded_list = os.listdir('downloaded-files')
-if ('match_complete-%i.xml.gz' % last_version) not in dlded_list:
-    print('Download of file match_complete-%i.xml.gz failed' % last_version)
-    exit()
-if ('interpro-%i.xml.gz' % last_version) not in dlded_list:
-    print('Download of file interpro-%i.xml.gz failed' % last_version)
-    exit()
 
