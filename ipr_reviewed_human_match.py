@@ -28,7 +28,7 @@ for infile in os.listdir('downloaded-files'):
         dates.append(date)
 dates_set = set(dates)
 if len(dates_set) == 1:
-    date_ext = dates_set[0]
+    date_ext = list(dates_set)[0]
 elif len(dates_set) > 1:
     print('A unique date is expected for uniprot-hproteome-%i fasta file.' % ipr_version)
 
@@ -40,7 +40,7 @@ complete_match_in = gzip.open('downloaded-files/match_complete-%i.xml.gz' % ipr_
 # Output files.
 matchrun_out = open('interpro_swiss_run.out','w')
 proteome_list = open('uniprot-entries-%i-%s.txt' % (ipr_version, date_ext),'w')
-swiss_match_out = open('ipr_reviewed_human_match-%i.xml' % ipr_version,'w')
+swiss_match_out = gzip.open('ipr_reviewed_human_match-%i.xml.gz' % ipr_version,'wt')
 
 
 # Extract UniProt ACs from uniprot-human-proteome-02jun2017.fasta.gz.
@@ -127,7 +127,10 @@ for line in complete_match_in:
     pos += 1
     if pos%10000000 == 0:
         t = time.time() - starttime
-        progress = '%iM lines parsed in %is, %i AC found. %s' % (pos/1000000, t, n, sublist)
+        progress = ('%iM lines parsed in %is, %i AC found. '
+                    'Searching for %s' 
+                    % (pos/1000000, t, n, ' '.join(sublist) )
+        )
         print(progress)
         matchrun_out.write('%s\n' %(progress) )
 

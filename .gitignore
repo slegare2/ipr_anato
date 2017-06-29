@@ -2,4 +2,9 @@ downloaded-files/match_complete-*.xml.gz
 downloaded-files/interpro-*.xml.gz
 downloaded-files/uniprot-hproteome-*.tsv.gz
 downloaded-files/uniprot-hproteome-*.fasta.gz
+interpro_swiss_run.out
+uniprot-entries-*.txt
+ipr_reviewed_human_match-*.xml*
+ipr_shortnames-nofam-*.xml*
+refs_mapping*.xml*
 

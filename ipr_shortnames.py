@@ -3,26 +3,27 @@
 # Extract essential data from InterPro entries and show hierarchy tree.
 
 import re
+import gzip
 import xml.etree.ElementTree as etree
 from anytree import Node, RenderTree
 
 human_only = False
-exclude_family = False
+exclude_family = True
 
 
 # Output files.
 if human_only and exclude_family:
-    short_out = open('ipr_shortnames-nofam-human-63.xml','w')
+    short_out = gzip.open('ipr_shortnames-nofam-human-63.xml.gz','wt')
 if human_only and not exclude_family:
-    short_out = open('ipr_shortnames-human-63.xml','w')
+    short_out = gzip.open('ipr_shortnames-human-63.xml.gz','wt')
 if not human_only and exclude_family:
-    short_out = open('ipr_shortnames-nofam-63.xml','w')
+    short_out = gzip.open('ipr_shortnames-nofam-63.xml.gz','wt')
 if not human_only and not exclude_family:
-    short_out = open('ipr_shortnames-63.xml','w')
+    short_out = gzip.open('ipr_shortnames-63.xml.gz','wt')
 
 # Input files.
-infile = 'files/interpro-63.xml'
-interpro_in = open(infile,'r').read()
+infile = 'downloaded-files/interpro-63.xml.gz'
+interpro_in = gzip.open(infile,'r').read()
 
 
 # Running options message.
