@@ -4,4 +4,4 @@ uniprot-entries-*.txt
 ipr_reviewed_human_match-*.xml*
 ipr_shortnames-nofam-*.xml*
 refs_mapping*.xml*
-
+__pycache__
