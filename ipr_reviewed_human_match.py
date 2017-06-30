@@ -16,9 +16,9 @@ import shutil
 # Choose which version of InterPro to use (must have been downloaded first
 # using fetch_files.py)
 ipr_version = 63
-print('Updating protein domain data to InterPro %i.' % ipr_version)
+print('Updating protein domain data to InterPro version %i.' % ipr_version)
 
-# Ensure that input files are as expected.
+# Ensure that input fasta file is dated as expected.
 dates = []
 for infile in os.listdir('downloaded-files'):
     if 'uniprot-hproteome-%i' % ipr_version in infile and 'fasta.gz' in infile:
@@ -31,6 +31,7 @@ if len(dates_set) == 1:
     date_ext = list(dates_set)[0]
 elif len(dates_set) > 1:
     print('A unique date is expected for uniprot-hproteome-%i fasta file.' % ipr_version)
+    exit()
 
 
 # Input files.

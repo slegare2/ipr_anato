@@ -3,14 +3,35 @@
 # File uniprot-hproteome.tsv.gz was obtained from UniProt REST
 # using script fetch_files.py.
 
+import os
 import gzip
 import csv
 
+# Choose which version of InterPro to use (must have been downloaded first
+# using fetch_files.py)
+ipr_version = 63
+print('Extracting UniProt references and isoforms associated with InterPro version %i.' % ipr_version)
 
-tsvfile = gzip.open('downloaded-files/uniprot-hproteome-63-29Jun2017.tsv.gz', 'rt')
-fastafile = gzip.open('downloaded-files/uniprot-hproteome-63-29Jun2017.fasta.gz', 'rt')
+# Ensure that input fasta and tsv files are dated as expected.
+dates = []
+for infile in os.listdir('downloaded-files'):
+    if 'uniprot-hproteome-%i' % ipr_version in infile:
+        dash = infile.rindex('-')
+        dot = infile.index('.')
+        date = infile[dash+1:dot]
+        dates.append(date)
+dates_set = set(dates)
+if len(dates_set) == 1:
+    date_ext = list(dates_set)[0]
+elif len(dates_set) > 1:
+    print('A unique date is expected for uniprot-hproteome-%i fasta and tsv files.' % ipr_version)
+    exit()
 
-outfile = gzip.open('refs_mapping.xml.gz', 'wt')
+
+tsvfile = gzip.open('downloaded-files/uniprot-hproteome-%i-%s.tsv.gz' % (ipr_version, date_ext), 'rt')
+fastafile = gzip.open('downloaded-files/uniprot-hproteome-%i-%s.fasta.gz' % (ipr_version, date_ext), 'rt')
+
+outfile = gzip.open('refs_mapping-%i.xml.gz' % ipr_version, 'wt')
 
 # Get the length of each isoform by counting the 
 # number of residues in fasta entry.

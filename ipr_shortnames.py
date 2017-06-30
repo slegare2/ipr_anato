@@ -10,19 +10,23 @@ from anytree import Node, RenderTree
 human_only = False
 exclude_family = True
 
+# Choose which version of InterPro to use (must have been downloaded first
+# using fetch_files.py)
+ipr_version = 63
+print('Extracting short names from InterPro version %i.' % ipr_version)
 
 # Output files.
 if human_only and exclude_family:
-    short_out = gzip.open('ipr_shortnames-nofam-human-63.xml.gz','wt')
+    short_out = gzip.open('ipr_shortnames-nofam-human-%i.xml.gz' % ipr_version, 'wt')
 if human_only and not exclude_family:
-    short_out = gzip.open('ipr_shortnames-human-63.xml.gz','wt')
+    short_out = gzip.open('ipr_shortnames-human-%i.xml.gz' % ipr_version, 'wt')
 if not human_only and exclude_family:
-    short_out = gzip.open('ipr_shortnames-nofam-63.xml.gz','wt')
+    short_out = gzip.open('ipr_shortnames-nofam-%i.xml.gz' % ipr_version, 'wt')
 if not human_only and not exclude_family:
-    short_out = gzip.open('ipr_shortnames-63.xml.gz','wt')
+    short_out = gzip.open('ipr_shortnames-%i.xml.gz' % ipr_version, 'wt')
 
 # Input files.
-infile = 'downloaded-files/interpro-63.xml.gz'
+infile = 'downloaded-files/interpro-%i.xml.gz' % ipr_version
 interpro_in = gzip.open(infile,'r').read()
 
 
