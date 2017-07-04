@@ -21,6 +21,10 @@ from lxml import etree
 import ipr_updater as ipru
 
 
+# Check if final output files already exist.
+ipr_version = ipru.online_version()
+
+
 # Create necessary directories if they do not exist
 downldir = 'downloaded_files' # Directory to put downloaded files.
 writedir = 'anatomizer_ipr_files' # Directory to write custom files.
@@ -29,10 +33,7 @@ ipru.ipr_mkdir(downldir, writedir)
 
 
 # --------- Fetch files ----------
-ipr_version = ipru.online_version()
-
 today = time.strftime("%d%b%Y")
-
 
 # Interpro
 interpro_version = ipru.local_version(downldir,
