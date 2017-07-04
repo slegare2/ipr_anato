@@ -208,11 +208,14 @@ def update_mapping(version, dldir, wrtdir):
     date = check_dates(version, dldir)
 
     # Input files.
-    tsvfile = gzip.open('%s/uniprot-hproteome-%i-%s.tsv.gz' % (dldir, version, date), 'rt')
-    fastafile = gzip.open('%s/uniprot-hproteome-%i-%s.fasta.gz' % (dldir, version, date), 'rt')
+    tsvfile = gzip.open('%s/uniprot-hproteome-%i-%s.tsv.gz'
+                        % (dldir, version, date), 'rt')
+    fastafile = gzip.open('%s/uniprot-hproteome-%i-%s.fasta.gz'
+                          % (dldir, version, date), 'rt')
     
     # Output file
-    outfile = gzip.open('%s/refs-tmp_mapping-%i.xml.gz' % (wrtdir, version), 'wt')
+    outfile = gzip.open('%s/refs-tmp_mapping-%i.xml.gz'
+                        % (wrtdir, version), 'wt')
 
     # Running options message.
     print('Extracting information from %s/' % dldir)
@@ -343,13 +346,14 @@ def update_shortname(version, dldir, wrtdir,
     short_out = gzip.open('%s/%s' % (wrtdir, filename), 'wt')
         
     # Running options message.
-    print('Extracting information from file "%s".' % infile)
+    print('Extracting information from %s/' % dldir)
+    print('interpro-%i.xml.gz' % version)
     if human_only:
-        print('Keeping only features found in "Human".')
+        print(' -- Keeping only features found in "Human".')
     if exclude_family:
-        print('Excluding entries of type "Family".')
+        print(' -- Excluding entries of type "Family".')
     if not human_only and not exclude_family:
-        print('Keeping all entries.')
+        print(' -- Keeping all entries.')
     
     
     interpro_root = etree.fromstring(interpro_in)
@@ -437,10 +441,10 @@ def update_match(version, dldir, wrtdir):
                                 % (wrtdir, version),'wt')
     
     # Running options message.
-    print('Extracting information from files "%s/match_complete-%i.xml.gz"' 
-          % (dldir, version) )
-    print('                              and "%s/uniprot-hproteome-%i-%s.fasta.gz"' 
-          % (dldir, version, date) )
+    print('Extracting information from %s/' % dldir)
+    print('match_complete-%i.xml.gz' % version)
+    print('uniprot-hproteome-%i-%s.fasta.gz' % (version, date) )
+    print(' -- This can take about 2 hours. Need to parse ~2.5 billion lines.')
 
     # Extract UniProt ACs from uniprot-human-proteome.fasta.gz.
     # ////////////
