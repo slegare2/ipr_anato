@@ -3,17 +3,34 @@ Set of utils to download and update InterPro information
 for use with the Anatomizer.
 """
 
+
 import os
 import sys
 import re
 import math
 import time
+import gzip
 import csv
 import shutil
-import urllib.request # Cannot use requests for FTP
-
+import urllib.request # "import requests" does not work for FTP
 import lxml.html
 from lxml import etree
+
+
+class IprUpdaterError(Exception):
+    """Base class for exception."""
+
+
+# 0. Initialize by writing output directories if they do not exist.
+#............................................................................
+def ipr_mkdir(dldir, wrtdir):
+    """ 
+    Create directory 'dldir,' to put fetched files
+    and directory 'wrtdir' to write custom InterPro files.
+    """
+    os.makedirs(dldir, exist_ok=True)
+    os.makedirs(wrtdir, exist_ok=True)
+#............................................................................
 
 
 # 1. Set of functions to fetch files from InterPro and UniProt.
@@ -114,29 +131,26 @@ def online_version():
     return onl_version
 
 
-def fetch_match(version):
+def fetch_match(version, dldir):
     """ Download match_complete.xml.gz. """
     urllib.request.urlretrieve('ftp://ftp.ebi.ac.uk/pub/databases/interpro/'
                                'match_complete.xml.gz', 
-                               'downloaded-files/match_complete-%i.xml.gz'
-                               % version, reporthook
+                               '%s/match_complete-%i.xml.gz'
+                               % (dldir, version), reporthook
     ) 
-    print('')
 
 
-def fetch_interpro(version):
+def fetch_interpro(version, dldir):
     """ Download interpro.xml.gz. """
     urllib.request.urlretrieve('ftp://ftp.ebi.ac.uk/pub/databases/interpro/'
                                'interpro.xml.gz', 
-                               'downloaded-files/interpro-%i.xml.gz' 
-                               % version, reporthook
+                               '%s/interpro-%i.xml.gz' 
+                               % (dldir, version), reporthook
     )
-    print('')
 
 
-def fetch_tsv(version, date):
+def fetch_tsv(version, dldir, date):
     """ Download uniprot-hproteome.tsv.gz. """
-    print('This should take about a minute.')
     queryline = ('http://www.uniprot.org/uniprot/'
                  '?query=reviewed:yes+AND+organism:9606+AND+proteome:up000005640'
                  '&sort=id&desc=no&format=tab&compress=yes'
@@ -144,32 +158,162 @@ def fetch_tsv(version, date):
                  'comment(ALTERNATIVE%20PRODUCTS)'
     )
     urllib.request.urlretrieve(queryline, 
-                               'downloaded-files/'
-                               'uniprot-hproteome-%i-%s.tsv.gz' 
-                               % (version, date)
+                               '%s/uniprot-hproteome-%i-%s.tsv.gz'
+                               % (dldir, version, date)
     )
-    print('')
 
 
-def fetch_fasta(version, date):
+def fetch_fasta(version, dldir, date):
     """ Download uniprot-hproteome.fasta.gz. """
-    print('This should take about a minute.')
     queryline = ('http://www.uniprot.org/uniprot/'
                  '?query=reviewed:yes+AND+organism:9606+AND+proteome:up000005640'
                  '&sort=id&desc=no&format=fasta&include=yes&compress=yes'
     )
     urllib.request.urlretrieve(queryline, 
-                               'downloaded-files/'
-                               'uniprot-hproteome-%i-%s.fasta.gz' 
-                               % (version, date)
+                               '%s/uniprot-hproteome-%i-%s.fasta.gz' 
+                               % (dldir, version, date)
     )
-    print('')
 
 # ---------------------------------------------------------------------------
 
 
 # 2. Extract HGNC mapping corresponding to InterPro version.
 # ===========================================================================
+def check_dates(version, dldir):
+    """
+    Ensure that input fasta and tsv files are dated as expected.
+    """
+    dates = []
+    for infile in os.listdir(dldir):
+        if 'uniprot-hproteome-%i' % version in infile:
+            dash = infile.rindex('-')
+            dot = infile.index('.')
+            date = infile[dash+1:dot]
+            dates.append(date)
+    dates_set = set(dates)
+    if len(dates_set) == 1:
+        date_ext = list(dates_set)[0]
+    elif len(dates_set) > 1:
+        raise IprUpdaterError('A unique date is expected for '
+                              'uniprot-hproteome-%i fasta and tsv files.'
+                              % version)
+    return date_ext
+
+
+def update_mapping(version, dldir, wrtdir):
+    """
+    Write an xml file that contains the UniProt id, HGNC symbol, HGNC id, 
+    HGNC synonyms and isoforms for each reviewed human proteome UniProt entry.
+    """
+    date = check_dates(version, dldir)
+
+    # Input files.
+    tsvfile = gzip.open('%s/uniprot-hproteome-%i-%s.tsv.gz' % (dldir, version, date), 'rt')
+    fastafile = gzip.open('%s/uniprot-hproteome-%i-%s.fasta.gz' % (dldir, version, date), 'rt')
+    
+    # Output file
+    outfile = gzip.open('%s/refs-tmp_mapping-%i.xml.gz' % (wrtdir, version), 'wt')
+
+    # Running options message.
+    print('Extracting information from %s/' % dldir)
+    print('uniprot-hproteome-%i-%s.tsv.gz' % (version, date) )
+    print('uniprot-hproteome-%i-%s.fasta.gz' % (version, date) )
+    
+    # Get the length of each isoform by counting the 
+    # number of residues in fasta entry.
+    isoform_lengths = {}
+    first = True
+    for line in fastafile:
+        if '>sp' in line:
+    
+            if not first:
+                isoform_lengths[isoform_id] = l
+            first = False
+    
+            pipe = line.index('|')+1
+            unpipe = line[pipe:].index('|') + pipe
+            isoform_id = line[pipe:unpipe]            
+            l = 0
+        else:
+            l += len(line) - 1
+    # For the last entry
+    isoform_lengths[isoform_id] = l
+    
+    outfile.write('<mapping>\n')
+    
+    reader = csv.reader(tsvfile, delimiter='\t')
+    first = True
+    for entry in reader:
+        if not first: 
+            uniprot_ac = entry[0]
+            hgnc_symbol = entry[1]
+            hgnc_synonyms = entry[2]
+            hgnc_id = entry[3][:-1]
+            alt_prods = entry[4]
+    
+            synonyms = hgnc_synonyms.split()
+            
+            # Process the "ALTERNATIVE PRODUCTS" part of entry.
+            isoform_info = alt_prods.split(';')
+            isoforms = []
+            seq_types = []
+            for field in isoform_info:
+                if 'IsoId' in field:
+                    equal_sign = field.index('=')
+                    # Sometimes, there are other ids for a same isoform.
+                    # I just take the first it these cases.
+                    try:
+                        coma = field.index(',')
+                        isoform_id = field[equal_sign+1:coma]
+                    except:
+                        isoform_id = field[equal_sign+1:]
+                    isoforms.append(isoform_id)
+                if 'Sequence' in field:
+                    equal_sign = field.index('=')
+                    seq_string = field[equal_sign+1:]
+                    if seq_string == 'Displayed':
+                        seq_types.append('canonical')
+                    else:
+                        seq_types.append('alternative')
+    
+            # Get the length of each isoform.
+            lengths = []
+            for isoform in isoforms:
+                try:
+                    l = isoform_lengths[isoform]
+                except:
+                    dash = isoform.index('-')
+                    canon = isoform[:dash]
+                    l = isoform_lengths[canon]
+                lengths.append(l)
+    
+            # Write to file in xml style.
+            outfile.write('<entry uniprot_ac="%s" hgnc_symbol="%s" hgnc_id="%s"' % (uniprot_ac, hgnc_symbol, hgnc_id) )
+            if len(synonyms) == 0 and len(isoforms) == 0:
+                outfile.write('/>\n')
+            else:
+                outfile.write('>\n')
+            for syn in synonyms:
+                outfile.write('  <synonym>%s</synonym>\n' % syn)
+            for i in range(len(isoforms)):
+                outfile.write('  <isoform>\n')
+                outfile.write('    <id>%s</id>\n' % isoforms[i])
+                outfile.write('    <length>%s</length>\n' % lengths[i])
+                outfile.write('    <type>%s</type>\n' % seq_types[i])
+                outfile.write('  </isoform>\n')
+            if len(synonyms) > 0 or len(isoforms) > 0:
+                outfile.write('</entry>\n')
+    
+        first = False
+    
+    outfile.write('</mapping>\n')
+
+    # Copy final output file if everything went well.
+    shutil.copyfile('%s/refs-tmp_mapping-%i.xml.gz' % (wrtdir, version), 
+                    '%s/refs_mapping-%i.xml.gz' % (wrtdir, version) )
+    os.remove('%s/refs-tmp_mapping-%i.xml.gz' % (wrtdir, version) )
+# ===========================================================================
+
 
 # 3. Extract InterPro short names and parents.
 #
@@ -177,13 +321,14 @@ def fetch_fasta(version, date):
 # and parents are used to merge domains that are banched.
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-def update_shortname(version, human_only = False, exclude_family = False):
+def update_shortname(version, dldir, wrtdir, 
+                     human_only = False, exclude_family = False):
     """
     Write an xml file that contains the id, short name, name, 
     parent and type of each InterPro entry.
     """
     # Input files.
-    infile = 'downloaded-files/interpro-%i.xml.gz' % ipr_version
+    infile = '%s/interpro-%i.xml.gz' % (dldir, version)
     interpro_in = gzip.open(infile,'r').read()
     
     # Output files.
@@ -195,10 +340,10 @@ def update_shortname(version, human_only = False, exclude_family = False):
         filename = 'ipr-tmp_shortnames-nofam-%i.xml.gz' % version
     if not human_only and not exclude_family:
         filename = 'ipr-tmp_shortnames-%i.xml.gz' % version
-    short_out = gzip.open(filename, 'wt')
+    short_out = gzip.open('%s/%s' % (wrtdir, filename), 'wt')
         
     # Running options message.
-    print('Extracting information from file %s.' % infile)
+    print('Extracting information from file "%s".' % infile)
     if human_only:
         print('Keeping only features found in "Human".')
     if exclude_family:
@@ -253,4 +398,144 @@ def update_shortname(version, human_only = False, exclude_family = False):
     
 
     short_out.write('</interprodb>\n')
+
+    # Copy final output file if everything went well.
+    new_filename = '%s%s' % (filename[:3], filename[7:])
+    shutil.copyfile('%s/%s' % (wrtdir, filename), 
+                    '%s/%s' % (wrtdir, new_filename))
+    os.remove('%s/%s' % (wrtdir, filename))
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+# 4. Extract the reviewed human entries from the InterPro file 
+# match_complete.xml.gz, which contains the InterPro domains of 
+# all UniProt entries.
+#
+# File match_complete.xml.gz is very large (~15Go compressed) and we do not
+# know the number of lines in advance. It presumably contains ~85 millon 
+# entries (the number of protein sequences in TrEMBL).
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+def update_match(version, dldir, wrtdir):
+    """
+    Write an xml file that contains the InterPro signatures of each 
+    UniProt reviewed human proteome entry.
+    """
+    date = check_dates(version, dldir)
+
+    # Input files.
+    rev_human_proteome = gzip.open('%s/uniprot-hproteome-%i-%s.fasta.gz' 
+                                   % (dldir, version, date),'r')
+    complete_match_in = gzip.open('%s/match_complete-%i.xml.gz'
+                                  % (dldir, version),'r')
+    
+    # Output files.
+    matchrun_out = open('reviewed_human_match_run.out','w')
+    proteome_list = open('%s/uniprot-entries-%i-%s.txt' 
+                         % (wrtdir, version, date),'w')
+    swiss_match_out = gzip.open('%s/ipr_reviewed_human_match-%i-copy.xml.gz'
+                                % (wrtdir, version),'wt')
+    
+    # Running options message.
+    print('Extracting information from files "%s/match_complete-%i.xml.gz"' 
+          % (dldir, version) )
+    print('                              and "%s/uniprot-hproteome-%i-%s.fasta.gz"' 
+          % (dldir, version, date) )
+
+    # Extract UniProt ACs from uniprot-human-proteome.fasta.gz.
+    # ////////////
+    n = 0
+    reviewed_protlist = []
+    for line in rev_human_proteome:
+        stringline = line.decode("utf-8")
+        if '>sp' in stringline:
+            pipe = stringline.index('|')+1
+            unpipe = stringline[pipe:].index('|') + pipe
+            uniprot_ac = stringline[pipe:unpipe]
+            reviewed_protlist.append(uniprot_ac)
+    
+    # Sort ACs so that they are in the same order as in match_complete.xml.gz.
+    sorted_protlist = sorted(reviewed_protlist)
+    
+    # Print sorted list of ACs to file.
+    for uniprot_ac in sorted_protlist:
+            n += 1
+            proteome_list.write('%5i %s\n' % (n, uniprot_ac) )
+    proteome_list.close()
+    print('Searching for %i reviewed entries in match_complete.xml.gz' % n)
+    # ////////////
+    
+    
+    # Useful variables.
+    n = 0
+    pos = 0
+    sublist_ind = 0
+    sublist_size = 4
+    writeit = False
+    starttime = time.time()
+    
+    sublist = sorted_protlist[sublist_ind:sublist_ind + sublist_size]
+    
+    # Element Tree expects xml files to have a single root tag.
+    swiss_match_out.write('<interpromatch>\n')
+    
+    # Loop over file match_complete.xml.gz.
+    for line in complete_match_in:
+        stringline = line.decode("utf-8") 
+    
+        # Find UniProt AC in match_complete.xml.gz lines.
+        if '<protein id=' in stringline:
+            quote = stringline.index('"')+1
+            unquote = stringline[quote:].index('"') + quote
+            uniprot_ac = stringline[quote:unquote]
+    
+            # Check if AC is in the UniProt reviewed human genome.
+            # If so, start writing entry to output file.
+            if uniprot_ac in sublist:
+                n += 1
+                acfound = 'Found reviewed UniProt Accession %i: %s %s'%(n,uniprot_ac,sublist)
+                print(acfound)
+                matchrun_out.write('%s\n' % (acfound) )
+                writeit = True
+    
+                # Check if AC was the first element of sublist.
+                # Otherwise, that means a reviewed entry is missing or 
+                # incorrectly ordered in match_complete.xml.gz.
+                ac_index = sublist.index(uniprot_ac)
+                if ac_index != 0:
+                    print('AC ', end='')
+                    matchrun_out.write('AC ')
+                    for i in range(ac_index):
+                        print('%s' % sublist[i], end='')
+                        matchrun_out.write('%s' % sublist[i] )
+                    print(' were skipped. %s' % sublist)
+                    matchrun_out.write('were skipped. %s\n' % sublist)
+                
+                # Update sublist.
+                sublist_ind += 1 + ac_index
+                sublist = sorted_protlist[sublist_ind:sublist_ind + sublist_size]
+    
+        if writeit:
+            swiss_match_out.write('%s' %(stringline) )
+    
+        # Entry stops with the line containing string '</protein>'.
+        if '</protein>' in stringline:
+            writeit = False
+    
+        # Print progress.
+        pos += 1
+        if pos%10000000 == 0:
+            t = time.time() - starttime
+            progress = ('%iM lines parsed in %is, %i AC found. '
+                        'Searching for %s' 
+                        % (pos/1000000, t, n, ' '.join(sublist) )
+            )
+            print(progress)
+            matchrun_out.write('%s\n' %(progress) )
+    
+    swiss_match_out.write('</interpromatch>\n')
+    
+    # Make a copy of the generated file, since it took so long.
+    shutil.copyfile('%s/ipr_reviewed_human_match-%i-copy.xml' % (wrtdir, version), 
+                    '%s/ipr_reviewed_human_match-%i.xml' % (wrtdir, version) )
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

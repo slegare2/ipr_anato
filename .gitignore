@@ -1,7 +1,4 @@
-downloaded-files
-interpro_swiss_run.out
-uniprot-entries-*.txt
-ipr_reviewed_human_match-*.xml*
-ipr_shortnames-nofam-*.xml*
-refs_mapping*.xml*
+downloaded_files
+anatomizer_ipr_files
+reviewed_human_match_run.out
 __pycache__
