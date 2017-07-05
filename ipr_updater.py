@@ -82,7 +82,7 @@ def convert_size(size_bytes):
    return "%s %s" % (s, size_name[i])
 
 
-def local_version(directory, prefix, suffix):
+def local_version(directory, prefix, suffix, avoid=None):
     """ 
     Check the version of local file with given prefix and suffix.
     An example of prefix is 'match_complete' and suffix would be 'xml.gz'.
@@ -90,24 +90,25 @@ def local_version(directory, prefix, suffix):
     match_versions = []
     for dlded_file in os.listdir(directory):
         if prefix in dlded_file and suffix in dlded_file:
-            # Find version as first series of int characters.
-            start = 0
-            for i in range(len(dlded_file)):
-                try:
-                    x = int(dlded_file[i])
-                    start = i-1
-                except:
-                    pass
-
-                if start > 0:
+            if not avoid or (avoid and avoid not in dlded_file):
+                # Find version as first series of int characters.
+                start = 0
+                for i in range(len(dlded_file)):
                     try:
                         x = int(dlded_file[i])
+                        start = i-1
                     except:
-                        end = i
-                        break
+                        pass
 
-            version = int(dlded_file[start:end])
-            match_versions.append(version)
+                    if start > 0:
+                        try:
+                            x = int(dlded_file[i])
+                        except:
+                            end = i
+                            break
+
+                version = int(dlded_file[start:end])
+                match_versions.append(version)
     if len(match_versions) > 0:
         sorted_versions = sorted(match_versions)
         loc_version = sorted_versions[-1]
@@ -540,6 +541,6 @@ def update_match(version, dldir, wrtdir):
     swiss_match_out.write('</interpromatch>\n')
     
     # Make a copy of the generated file, since it took so long.
-    shutil.copyfile('%s/ipr_reviewed_human_match-%i-copy.xml' % (wrtdir, version), 
-                    '%s/ipr_reviewed_human_match-%i.xml' % (wrtdir, version) )
+    shutil.copyfile('%s/ipr_reviewed_human_match-%i-copy.xml.gz' % (wrtdir, version), 
+                    '%s/ipr_reviewed_human_match-%i.xml.gz' % (wrtdir, version) )
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
