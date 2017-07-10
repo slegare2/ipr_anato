@@ -25,7 +25,7 @@ import ipr_updater as ipru
 ipr_version = ipru.online_version()
 
 
-# Create necessary directories if they do not exist
+## Create necessary directories if they do not exist
 downldir = 'downloaded_files' # Directory to put downloaded files.
 writedir = 'anatomizer_ipr_files' # Directory to write custom files.
 ipru.ipr_mkdir(downldir, writedir)
@@ -103,7 +103,7 @@ else:
 print(' ---- Finished fetching files. Now writing custom files. ----\n')
 
 
-# ====== Write custom files ======
+## ====== Write custom files ======
 
 # Mapping
 mapping_version = ipru.local_version(writedir, 

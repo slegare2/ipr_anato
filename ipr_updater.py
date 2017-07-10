@@ -311,6 +311,7 @@ def update_mapping(version, dldir, wrtdir):
         first = False
     
     outfile.write('</mapping>\n')
+    outfile.close()
 
     # Copy final output file if everything went well.
     shutil.copyfile('%s/refs-tmp_mapping-%i.xml.gz' % (wrtdir, version), 
@@ -403,6 +404,7 @@ def update_shortname(version, dldir, wrtdir,
     
 
     short_out.write('</interprodb>\n')
+    short_out.close()
 
     # Copy final output file if everything went well.
     new_filename = '%s%s' % (filename[:3], filename[7:])
@@ -539,7 +541,8 @@ def update_match(version, dldir, wrtdir):
             matchrun_out.write('%s\n' %(progress) )
     
     swiss_match_out.write('</interpromatch>\n')
-    
+    swiss_match_out.close()
+
     # Make a copy of the generated file, since it took so long.
     shutil.copyfile('%s/ipr_reviewed_human_match-%i-copy.xml.gz' % (wrtdir, version), 
                     '%s/ipr_reviewed_human_match-%i.xml.gz' % (wrtdir, version) )
