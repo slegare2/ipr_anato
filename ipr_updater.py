@@ -470,8 +470,8 @@ def update_match(version, dldir, wrtdir):
             proteome_list.write('%5i %s\n' % (n, uniprot_ac) )
     proteome_list.close()
     print('Searching for %i reviewed entries in match_complete.xml.gz' % n)
-    matchrun_out.write('Searching for %i reviewed entries in 
-                        match_complete.xml.gz\n' % n )
+    matchrun_out.write('Searching for %i reviewed entries in ' 
+                       'match_complete.xml.gz\n' % n )
     # ////////////
     
     
