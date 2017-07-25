@@ -261,24 +261,28 @@ def update_mapping(version, dldir, wrtdir):
             isoform_info = alt_prods.split(';')
             isoforms = []
             seq_types = []
-            for field in isoform_info:
-                if 'IsoId' in field:
-                    equal_sign = field.index('=')
-                    # Sometimes, there are other ids for a same isoform.
-                    # I just take the first it these cases.
-                    try:
-                        coma = field.index(',')
-                        isoform_id = field[equal_sign+1:coma]
-                    except:
-                        isoform_id = field[equal_sign+1:]
-                    isoforms.append(isoform_id)
-                if 'Sequence' in field:
-                    equal_sign = field.index('=')
-                    seq_string = field[equal_sign+1:]
-                    if seq_string == 'Displayed':
-                        seq_types.append('canonical')
-                    else:
-                        seq_types.append('alternative')
+            if len(isoform_info) > 1:
+                for field in isoform_info:
+                    if 'IsoId' in field:
+                        equal_sign = field.index('=')
+                        # Sometimes, there are other ids for a same isoform.
+                        # I just take the first it these cases.
+                        try:
+                            coma = field.index(',')
+                            isoform_id = field[equal_sign+1:coma]
+                        except:
+                            isoform_id = field[equal_sign+1:]
+                        isoforms.append(isoform_id)
+                    if 'Sequence' in field:
+                        equal_sign = field.index('=')
+                        seq_string = field[equal_sign+1:]
+                        if seq_string == 'Displayed':
+                            seq_types.append('canonical')
+                        else:
+                            seq_types.append('alternative')
+            else: # Assume one single sequence with id UNIPAC-1.
+                isoforms.append('%s-1' % uniprot_ac)
+                seq_types.append('canonical')
     
             # Get the length of each isoform.
             lengths = []
@@ -292,11 +296,8 @@ def update_mapping(version, dldir, wrtdir):
                 lengths.append(l)
     
             # Write to file in xml style.
-            outfile.write('<entry uniprot_ac="%s" hgnc_symbol="%s" hgnc_id="%s"' % (uniprot_ac, hgnc_symbol, hgnc_id) )
-            if len(synonyms) == 0 and len(isoforms) == 0:
-                outfile.write('/>\n')
-            else:
-                outfile.write('>\n')
+            outfile.write('<entry uniprot_ac="%s" hgnc_symbol="%s" hgnc_id="%s">\n' 
+                          % (uniprot_ac, hgnc_symbol, hgnc_id) )
             for syn in synonyms:
                 outfile.write('  <synonym>%s</synonym>\n' % syn)
             for i in range(len(isoforms)):
@@ -305,8 +306,7 @@ def update_mapping(version, dldir, wrtdir):
                 outfile.write('    <length>%s</length>\n' % lengths[i])
                 outfile.write('    <type>%s</type>\n' % seq_types[i])
                 outfile.write('  </isoform>\n')
-            if len(synonyms) > 0 or len(isoforms) > 0:
-                outfile.write('</entry>\n')
+            outfile.write('</entry>\n')
     
         first = False
     

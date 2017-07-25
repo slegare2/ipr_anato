@@ -10,7 +10,7 @@ ftpdir = 'anatomizer_ipr_files'
 
 
 # List of files to remove on remote site perso.ens-lyon.fr
-rmfile_list = ['refs_mapping-63.xml.gz', 'ipr_shortnames-63.xml.gz', 'ipr_reviewed_human_match-63.xml.gz']
+rmfile_list = ['refs_mapping-64.xml.gz']
 
 
 if len(rmfile_list) > 0:
