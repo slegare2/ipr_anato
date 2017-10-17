@@ -1,10 +1,17 @@
 # ipr_updater
 
+Usage:
+
+Run update_ipr.py first, to create updated InterPro files
+Then run to_ens_perso.py to send the files to remote ENS website.
+
+
+Description:
+
 The ipr_updater updates custom files built from the InterPro protein domain database
 for use with the Anatomizer project.
 
 It contains 4 files: ipr_updater.py, update_ipr.py, to_ens_perso.py and rm_ens_perso.py.
-
 
 Module ipr_updater.py contains the functions required to fetch InterPro files and 
 extract the desired information to custom files.
