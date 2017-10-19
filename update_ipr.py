@@ -109,36 +109,48 @@ print(' ---- Finished fetching files. Now writing custom files. ----\n')
 mapping_version = ipru.local_version(writedir, 
                                      'refs_mapping-', '.xml.gz')
 if mapping_version < ipr_version:
-    print('Writing file 1 of 3 refs_mapping-%i.xml.gz to %s/'
+    print('Writing file 1 of 4 refs_mapping-%i.xml.gz to %s/'
           % (ipr_version, writedir) )
     ipru.update_mapping(ipr_version, downldir, writedir)
     print('')
 else:
-    print('File 1 of 3 refs_mapping-%i.xml.gz already in %s/\n'
+    print('File 1 of 4 refs_mapping-%i.xml.gz already in %s/\n'
           % (ipr_version, writedir) )
 
 # Short names
 shortname_version = ipru.local_version(writedir, 
                                        'ipr_shortnames-', '.xml.gz')
 if shortname_version < ipr_version:
-    print('Writing file 2 of 3 ipr_shortnames-%i.xml.gz to %s/'
+    print('Writing file 2 of 4 ipr_shortnames-%i.xml.gz to %s/'
           % (ipr_version, writedir) )
     ipru.update_shortname(ipr_version, downldir, writedir)
     print('')
 else:
-    print('File 2 of 3 ipr_shortnames-%i.xml.gz already in %s/\n'
+    print('File 2 of 4 ipr_shortnames-%i.xml.gz already in %s/\n'
           % (ipr_version, writedir) )
 
 # Matching
 matching_version = ipru.local_version(writedir, 
                                       'ipr_reviewed_human_match-', '.xml.gz')
 if matching_version < ipr_version:
-    print('Writing file 3 of 3 ipr_reviewed_human_match-%i.xml.gz to %s/'
+    print('Writing file 3 of 4 ipr_reviewed_human_match-%i.xml.gz to %s/'
           % (ipr_version, writedir) )
     ipru.update_match(ipr_version, downldir, writedir)
     print('')
 else:
-    print('File 3 of 3 ipr_reviewed_human_match-%i.xml.gz already in %s/\n'
+    print('File 3 of 4 ipr_reviewed_human_match-%i.xml.gz already in %s/\n'
+          % (ipr_version, writedir) )
+
+# Extracting canonicals
+canon_version = ipru.local_version(writedir,
+                                   'ipr_canonical_human_match-', '.xml.gz')
+if canon_version < ipr_version:
+    print('Writing file 4 of 4 ipr_canonical_human_match-%i.xml.gz to %s/'
+          % (ipr_version, writedir) )
+    ipru.extract_canon(ipr_version, writedir)
+    print('')
+else:
+    print('File 4 of 4 ipr_canonical_human_match-%i.xml.gz already in %s/\n'
           % (ipr_version, writedir) )
 
 # ================================

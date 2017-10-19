@@ -549,3 +549,56 @@ def update_match(version, dldir, wrtdir):
     shutil.copyfile('%s/ipr_reviewed_human_match-%i-copy.xml.gz' % (wrtdir, version), 
                     '%s/ipr_reviewed_human_match-%i.xml.gz' % (wrtdir, version) )
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+# 5. Extract canonical entries only from previously made file 
+# ipr_reviewed_human_match.xml.gz.
+#
+# Canonical entries in file ipr_reviewed_human_match.xml.gz are simply the
+# ones with no dash (-).
+# ***************************************************************************
+
+def extract_canon(version, wrtdir):
+    """
+    Write an xml file that contains the InterPro signatures of each 
+    canonical UniProt reviewed human proteome entry.
+    """
+    # Input file.
+    rev_human_match_in =  gzip.open('%s/ipr_reviewed_human_match-%i.xml.gz'
+        % (wrtdir, version),'r')
+    
+    # Output file.
+    canon_human_match_out =  gzip.open('%s/ipr_canonical_human_match-%i.xml.gz'
+        % (wrtdir, version),'wt')
+
+    # Running options message.
+    print('Extracting information from %s/' % wrtdir)
+    print('ipr_reviewed_human_match-%i.xml.gz' % version)
+
+    writeit = False
+
+    # Element Tree expects xml files to have a single root tag.
+    canon_human_match_out.write('<interpromatch>\n')
+    
+    # Loop over file ipr_reviewed_human_match.xml.gz.
+    for line in rev_human_match_in:
+        stringline = line.decode("utf-8")
+  
+        # Find canonical UniProt AC in ipr_reviewed_human_match.xml.gz lines.
+        if '<protein id=' in stringline:
+            tokens = stringline.split()
+            # If there is no dash, it means that entry is canonical,
+            # write it to output file.
+            if '-' not in tokens[1]:
+                writeit = True
+
+        if writeit:
+            canon_human_match_out.write('%s' %(stringline) )
+
+        # Entry stops with the line containing string '</protein>'.
+        if '</protein>' in stringline:
+            writeit = False
+
+    canon_human_match_out.write('</interpromatch>\n')
+    canon_human_match_out.close()
+# ***************************************************************************
