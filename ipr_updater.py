@@ -447,7 +447,7 @@ def update_match(version, dldir, wrtdir):
     print('Extracting information from %s/' % dldir)
     print('match_complete-%i.xml.gz' % version)
     print('uniprot-hproteome-%i-%s.fasta.gz' % (version, date) )
-    print(' -- This can take about 2 hours. Need to parse ~2.5 billion lines.')
+    print(' -- This can take several hours. Need to parse ~5 billion lines.')
 
     # Extract UniProt ACs from uniprot-human-proteome.fasta.gz.
     # ////////////
